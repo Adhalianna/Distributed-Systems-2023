@@ -1,0 +1,2 @@
+[workspace]
+members = ["task1", "task1_produce_inputs"]
