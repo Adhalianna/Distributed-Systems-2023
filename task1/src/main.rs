@@ -7,6 +7,7 @@ fn main() {
         .nth(1)
         .expect("expected a filename as an argument");
     let file = std::fs::File::open(&filename).expect("failed to open the file");
+    println!("Reading file: {filename}");
 
     // Some sort of parseable file format was needed and the final selection ended up being the
     // json representation of petgraph::Graph type. petgraph package uses internally adjacency
@@ -19,7 +20,9 @@ fn main() {
     let sccs = find_sccs(&graph);
 
     if sccs.len() > 1 {
-        println!("Recording the state of all of the nodes in the graph will not be possible as the graph does not create a single strongly connected component")
+        println!("Recording the state of all of the nodes in the graph will not be possible as the graph does not create a single strongly connected component.")
+    } else {
+        println!("Recording the state of all the nods within the graph is possible.")
     }
 
     // now if we are asking for a specific node:

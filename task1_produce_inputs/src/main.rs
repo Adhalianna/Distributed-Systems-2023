@@ -26,31 +26,71 @@ fn main() {
     let mut file_opt = std::fs::File::options();
     let file1 = file_opt
         .write(true)
+        .create(true)
         .open("inputs/task1/example1.json")
-        .unwrap();
+        .expect("failed to open or create file");
 
-    serde_json::to_writer(file1, &graph1);
+    serde_json::to_writer(file1, &graph1).unwrap();
+    println!(
+        "{:?}",
+        petgraph::dot::Dot::with_config(&graph1, &[petgraph::dot::Config::EdgeNoLabel])
+    );
 
-    // The example from the lecture slides made to be complete
+    // The example from the lecture slides
     let mut graph2 = petgraph::Graph::<String, (), petgraph::Directed>::new();
-    let Aidx = graph1.add_node("A".to_owned());
-    let Bidx = graph1.add_node("B".to_owned());
-    let Cidx = graph1.add_node("C".to_owned());
-    let Didx = graph1.add_node("D".to_owned());
+    let Aidx = graph2.add_node("A".to_owned());
+    let Bidx = graph2.add_node("B".to_owned());
+    let Cidx = graph2.add_node("C".to_owned());
+    let Didx = graph2.add_node("D".to_owned());
 
-    graph1.add_edge(Aidx, Cidx, ());
-    graph1.add_edge(Aidx, Bidx, ());
-    graph1.add_edge(Bidx, Aidx, ());
-    graph1.add_edge(Bidx, Didx, ());
-    graph1.add_edge(Cidx, Bidx, ());
-    graph1.add_edge(Cidx, Didx, ());
-    graph1.add_edge(Didx, Bidx, ());
+    graph2.add_edge(Aidx, Cidx, ());
+    graph2.add_edge(Aidx, Bidx, ());
+    graph2.add_edge(Bidx, Aidx, ());
+    graph2.add_edge(Bidx, Didx, ());
+    graph2.add_edge(Cidx, Bidx, ());
+    graph2.add_edge(Cidx, Didx, ());
+    graph2.add_edge(Didx, Bidx, ());
 
     let mut file_opt = std::fs::File::options();
     let file2 = file_opt
         .write(true)
+        .create(true)
         .open("inputs/task1/example2.json")
-        .unwrap();
+        .expect("failed to open or create file");
 
-    serde_json::to_writer(file2, &graph2);
+    serde_json::to_writer(file2, &graph2).unwrap();
+    println!(
+        "{:?}",
+        petgraph::dot::Dot::with_config(&graph2, &[petgraph::dot::Config::EdgeNoLabel])
+    );
+
+    // Own example
+    let mut graph3 = petgraph::Graph::<String, (), petgraph::Directed>::new();
+    let Aidx = graph3.add_node("A".to_owned());
+    let Bidx = graph3.add_node("B".to_owned());
+    let Cidx = graph3.add_node("C".to_owned());
+    let Didx = graph3.add_node("D".to_owned());
+    let Fidx = graph3.add_node("F".to_owned());
+
+    graph3.add_edge(Aidx, Bidx, ());
+    graph3.add_edge(Bidx, Aidx, ());
+    graph3.add_edge(Bidx, Didx, ());
+    graph3.add_edge(Didx, Bidx, ());
+    graph3.add_edge(Didx, Cidx, ());
+    graph3.add_edge(Didx, Aidx, ());
+    graph3.add_edge(Cidx, Fidx, ());
+    graph3.add_edge(Fidx, Cidx, ());
+
+    let mut file_opt = std::fs::File::options();
+    let file3 = file_opt
+        .write(true)
+        .create(true)
+        .open("inputs/task1/example3.json")
+        .expect("failed to open or create file");
+
+    serde_json::to_writer(file3, &graph3).unwrap();
+    println!(
+        "{:?}",
+        petgraph::dot::Dot::with_config(&graph3, &[petgraph::dot::Config::EdgeNoLabel])
+    );
 }
