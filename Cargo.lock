@@ -136,6 +136,9 @@ name = "serde"
 version = "1.0.163"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2113ab51b87a539ae008b5c6c02dc020ffa39afd2d83cffcb3f4eb2722cebec2"
+dependencies = [
+ "serde_derive",
+]
 
 [[package]]
 name = "serde_derive"
@@ -193,6 +196,8 @@ name = "task2"
 version = "0.1.0"
 dependencies = [
  "rand",
+ "serde",
+ "serde_json",
 ]
 
 [[package]]

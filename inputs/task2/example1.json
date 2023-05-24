@@ -1,0 +1,74 @@
+{
+    "A": [
+        {
+            "type": "idle",
+            "duration": 1000
+        },
+        {
+            "type": "cs",
+            "duration": 5000
+        },
+        {
+            "type": "idle",
+            "duration": 15000
+        },
+        {
+            "type": "cs",
+            "duration": 1000
+        }
+    ],
+    "B": [
+        {
+            "type": "idle",
+            "duration": 3000
+        },
+        {
+            "type": "cs",
+            "duration": 3000
+        },
+        {
+            "type": "idle",
+            "duration": 3000
+        },
+        {
+            "type": "cs",
+            "duration": 3000
+        }
+    ],
+    "C": [
+        {
+            "type": "idle",
+            "duration": 3000
+        },
+        {
+            "type": "cs",
+            "duration": 3000
+        },
+        {
+            "type": "idle",
+            "duration": 3000
+        },
+        {
+            "type": "cs",
+            "duration": 3000
+        }
+    ],
+    "D": [
+        {
+            "type": "idle",
+            "duration": 3000
+        },
+        {
+            "type": "cs",
+            "duration": 3000
+        },
+        {
+            "type": "idle",
+            "duration": 3000
+        },
+        {
+            "type": "cs",
+            "duration": 3000
+        }
+    ]
+}
