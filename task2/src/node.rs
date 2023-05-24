@@ -162,13 +162,13 @@ impl Node {
                             }
                         );
 
-                        if (timestamp == request_timestamp
-                            && format!("{:?}", node_id) < format!("{:?}", current_node.node_id))
-                            || timestamp < request_timestamp
                         // NOTE:
                         // a very hacky way of checking if one id is somehow
                         // smaller than the other, a limitation introduced by the
                         // portability properties of the standard library
+                        if (timestamp == request_timestamp
+                            && format!("{:?}", node_id) < format!("{:?}", current_node.node_id))
+                            || timestamp < request_timestamp
                         {
                             if timestamp == current_node.clock {
                                 // sync the clock
