@@ -1,3 +1,22 @@
+# Solved tasks
+
+#### Assignmnet 1
+
+```sh
+cargo run --bin task1 inputs/task1/example1.json F
+```
+Described by README in the [task1](task1/README.md) directory.
+
+#### Assignmnet 2
+
+```sh
+cargo run --bin task2 inputs/task2/example1.json
+```
+Described by README in the [task2](task2/README.md) directory.
+
+
+---
+
 # The execution environment / compilation tools
 
 ## Getting the tools
