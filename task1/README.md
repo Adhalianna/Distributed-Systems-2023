@@ -12,7 +12,7 @@ Suggested:
 cargo run --bin task1 -- inputs/task1/example1.json F
 ```
 
-Otherwise check the [README of the workspace](../README.md) for more details on
+Otherwise check the [README of the workspace](../../README.md) for more details on
 executing the compiled binary.
 
 # Provided examples
@@ -20,8 +20,8 @@ executing the compiled binary.
 [`inputs/task1/example1.json`](../inputs/task1/example1.json)
 ![](../inputs/task1/example1.png)
 
-[`inputs/task2/example1.json`](../inputs/task2/example1.json)
-![](../inputs/task2/example1.png)
+[`inputs/task2/example1.json`](../inputs/task1/example2.json)
+![](../inputs/task1/example2.png)
 
-[`inputs/task3/example1.json`](../inputs/task3/example1.json)
-![](../inputs/task3/example1.png)
+[`inputs/task3/example1.json`](../inputs/task1/example3.json)
+![](../inputs/task1/example3.png)
