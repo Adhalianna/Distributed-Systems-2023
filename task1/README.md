@@ -12,7 +12,7 @@ Suggested:
 cargo run --bin task1 -- inputs/task1/example1.json F
 ```
 
-Otherwise check the [README of the workspace](../../README.md) for more details on
+Otherwise check the [README of the workspace](../README.md) for more details on
 executing the compiled binary.
 
 # Provided examples
