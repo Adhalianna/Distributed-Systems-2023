@@ -17,11 +17,11 @@ executing the compiled binary.
 
 # Provided examples
 
-[`inputs/task1/example1.json`](inputs/task1/example1.json)
-![](inputs/task1/example1.png)
+[`inputs/task1/example1.json`](../inputs/task1/example1.json)
+![](../inputs/task1/example1.png)
 
-[`inputs/task2/example1.json`](inputs/task2/example1.json)
-![](inputs/task2/example1.png)
+[`inputs/task2/example1.json`](../inputs/task2/example1.json)
+![](../inputs/task2/example1.png)
 
-[`inputs/task3/example1.json`](inputs/task3/example1.json)
-![](inputs/task3/example1.png)
+[`inputs/task3/example1.json`](../inputs/task3/example1.json)
+![](../inputs/task3/example1.png)
