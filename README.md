@@ -77,10 +77,6 @@ To compile in the release mode (faster, possibly smaller binary) run:
 cargo build --bin task2 --release
 ```
 
-# Finding the details on specific assignment solution
-
-The directories `task1`, `task2`, etc. if applicable will have a README file
-going into more details about possible arguments to the program.
 
 # GitHub repository
 
