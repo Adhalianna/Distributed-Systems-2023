@@ -1,6 +1,13 @@
-use std::collections::{BTreeSet, HashSet};
+use std::{
+    collections::{HashMap, HashSet},
+    iter::Inspect,
+};
 
-use petgraph::graph::NodeIndex;
+use petgraph::{
+    graph::{self, NodeIndex},
+    visit::IntoNodeIdentifiers,
+    Directed,
+};
 
 fn main() {
     let filename = std::env::args()
@@ -13,109 +20,69 @@ fn main() {
     // json representation of petgraph::Graph type. petgraph package uses internally adjacency
     // list to store its Graph type.
 
-    let graph: petgraph::Graph<String, (), petgraph::Directed> = serde_json::from_reader(file)
+    let graph: petgraph::Graph<String, (), Directed> = serde_json::from_reader(file)
         .expect("could not read the file contents as a serialized petgraph crate graph with directed edges, string-type nodes and no edge weights");
 
-    // Find all strongly connected components:
-    let sccs = find_sccs(&graph);
+    if let Some(selected_node) = std::env::args().nth(2) {
+        let select_idx = graph
+            .node_indices()
+            .find(|idx| graph.node_weight(*idx).unwrap() == &selected_node)
+            .expect("failed to find the selected node in the provided graph");
 
-    if sccs.len() > 1 {
-        println!("Recording the state of all of the nodes in the graph will not be possible as the graph does not create a single strongly connected component.")
+        if bfs_check_initiator(select_idx, &graph) {
+            println!("{selected_node} is a good candidate for an initiator!");
+        } else {
+            println!("{selected_node} is NOT a good candidate for an initiator");
+        }
     } else {
-        println!("Recording the state of all the nods within the graph is possible.")
+        let good_candidates = bfs_check_all_initiators(&graph);
+        if !good_candidates.is_empty() {
+            println!(
+                "nodes [ {} ] make good candidates for initiators",
+                good_candidates
+                    .iter()
+                    .map(|idx| graph.node_weight(*idx).unwrap())
+                    .map(|lbl| lbl.to_string())
+                    .reduce(|acc, next| acc + ", " + &next)
+                    .unwrap()
+            )
+        } else {
+            println!("no good candidates found");
+        }
     }
+}
 
-    // now if we are asking for a specific node:
-    if let Some(check_node) = std::env::args().nth(2) {
-        let mut found_the_arg = false;
-        for scc in sccs {
-            if let Some(n) = scc
-                .iter()
-                .map(|idx| {
-                    graph
-                        .node_weight(*idx)
-                        .expect("nodes should not dissappear during program execution")
-                })
-                .find(|item| check_node == **item)
-            {
-                found_the_arg = true;
+fn bfs_check_initiator(
+    candidate_idx: NodeIndex,
+    graph: &petgraph::Graph<String, (), Directed>,
+) -> bool {
+    let mut nodes_covered = HashSet::new();
+    let mut to_visit = Vec::new();
+    let nodes_total_num = graph.node_count();
 
-                let mapped_for_print: Vec<_> = scc
-                    .into_iter()
-                    .map(|idx| {
-                        graph
-                            .node_weight(idx)
-                            .expect("nodes should not dissappear during program execution")
-                    })
-                    .collect();
-                println!("Node {n} can record the state of nodes: {mapped_for_print:?}");
+    nodes_covered.insert(candidate_idx);
+    to_visit.push(candidate_idx);
+
+    while let Some(inspect) = to_visit.pop() {
+        for neigh in graph.neighbors(inspect) {
+            if nodes_covered.insert(neigh) {
+                to_visit.push(neigh)
             }
         }
-        if !found_the_arg {
-            println!("Failed to find node \"{check_node}\" in the graph");
+        if nodes_covered.len() == nodes_total_num {
+            return true;
         }
     }
+
+    !(nodes_covered.len() < nodes_total_num)
 }
 
-/// Implemented using Kosaraju's algorithm:
-fn find_sccs<'a>(
-    graph: &'a petgraph::Graph<String, (), petgraph::Directed>,
-) -> Vec<Vec<NodeIndex>> {
-    let mut stk = Vec::new();
-    let mut visited = HashSet::<NodeIndex>::new();
-    let mut sccs = Vec::new();
-
+fn bfs_check_all_initiators(graph: &petgraph::Graph<String, (), Directed>) -> Vec<NodeIndex> {
+    let mut initiators = Vec::new();
     for n in graph.node_indices() {
-        if !visited.contains(&n) {
-            dfs_stack_backtracking(n, &mut visited, graph, &mut stk)
+        if bfs_check_initiator(n, graph) {
+            initiators.push(n);
         }
     }
-
-    visited = HashSet::new();
-
-    while let Some(n) = stk.pop() {
-        if !visited.contains(&n) {
-            let mut scc = Vec::new();
-            dfs_util(
-                n,
-                &mut visited,
-                graph,
-                &mut scc,
-                petgraph::Direction::Incoming,
-            );
-            sccs.push(scc);
-        }
-    }
-    sccs
-}
-
-fn dfs_util(
-    node_idx: NodeIndex,
-    visited: &mut HashSet<NodeIndex>,
-    graph: &petgraph::Graph<String, (), petgraph::Directed>,
-    store: &mut Vec<NodeIndex>,
-    dir: petgraph::Direction,
-) {
-    visited.insert(node_idx);
-    store.push(node_idx);
-    for n in graph.neighbors_directed(node_idx, dir) {
-        if !visited.contains(&n) {
-            dfs_util(n, visited, graph, store, dir);
-        }
-    }
-}
-
-fn dfs_stack_backtracking(
-    node_idx: NodeIndex,
-    visited: &mut HashSet<NodeIndex>,
-    graph: &petgraph::Graph<String, (), petgraph::Directed>,
-    stk: &mut Vec<NodeIndex>,
-) {
-    visited.insert(node_idx);
-    for n in graph.neighbors_directed(node_idx, petgraph::Direction::Outgoing) {
-        if !visited.contains(&n) {
-            dfs_stack_backtracking(n, visited, graph, stk);
-        }
-        stk.push(node_idx);
-    }
+    initiators
 }

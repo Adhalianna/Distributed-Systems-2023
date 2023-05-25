@@ -1,1 +1,1 @@
-{"nodes":["A","B","C","D"],"node_holes":[],"edge_property":"directed","edges":[[0,2,null],[0,1,null],[1,0,null],[1,3,null],[2,1,null],[2,3,null],[3,1,null]]}
+{"nodes":["A","B","C","D","E","F"],"node_holes":[],"edge_property":"directed","edges":[[0,2,null],[0,1,null],[1,0,null],[1,3,null],[2,1,null],[2,3,null],[3,1,null],[3,4,null],[4,3,null],[5,4,null]]}
