@@ -9,4 +9,3 @@ edition = "2021"
 serde = {version = "^1", features = ["derive", "rc"]}
 crossbeam-channel = "^0.5"
 rand = "*"
-colored = "*"

@@ -12,7 +12,7 @@ pub struct NodeId(pub std::thread::ThreadId);
 pub enum SystemMsg {
     TokenMsg,
     /// Required as an additional step of reversing the connection between nodes.
-    /// A constraint added by the simulated environment.
+    /// A constraint added by the simulation environment.
     NewParentSender {
         parent: Sender<SystemMsg>,
     },
@@ -26,7 +26,7 @@ pub enum SystemMsg {
 
 pub struct SystemNode(TreeNode<SystemNodeData>);
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct NodeLocalData {
     node_id: std::thread::ThreadId,
     parent_tx: Option<Sender<SystemMsg>>,
@@ -39,6 +39,112 @@ pub struct NodeLocalData {
 }
 
 impl SystemNode {
+    pub fn execute(&mut self) {
+        // extract some data as variables to function to avoid locking the lock
+        let self_id = self.node_id();
+        let display_name = self.display_name();
+
+        // extra info to logs:
+        println!("{display_name} finished initialization!");
+        if self.is_root() {
+            println!("{display_name} is the starting root!");
+        }
+
+        //start only on receiving the Start message
+        self.wait_for_start();
+
+        loop {
+            self.execute_idle_task();
+
+            {
+                self.push_request(self_id, self.new_self_tx());
+
+                if let Some(parent_tx) = self.parent_tx() {
+                    parent_tx
+                        .send(SystemMsg::RequestMsg {
+                            node_id: self_id,
+                            requesting: self.new_self_tx(),
+                        })
+                        .unwrap();
+
+                    println!("{display_name} sent a request for CS access");
+                } else {
+                    self.start_with_token_to_self();
+                }
+            }
+            loop {
+                match self.recv() {
+                    SystemMsg::TokenMsg => {
+                        println!("{display_name} received a token");
+                        if !self.is_root() {
+                            // Now become a root
+                            self.make_self_root();
+                            println!("{display_name} is now a root!");
+
+                            self.pop_do_own_and_pass(self_id);
+                            break;
+                        }
+                    }
+                    SystemMsg::NewParentSender { parent } => {
+                        self.set_parent(parent);
+                        println!("{display_name} switched its parent");
+                    }
+                    SystemMsg::RequestMsg {
+                        node_id,
+                        requesting,
+                    } => {
+                        println!("{display_name} received a request");
+                        self.push_request(node_id, requesting);
+                    }
+                    SystemMsg::Start => {}
+                }
+            }
+        }
+    }
+}
+
+/// Some less interesting methods:
+impl SystemNode {
+    fn pop_do_own_and_pass(&mut self, self_id: ThreadId) {
+        if let Some((id, tx)) = self.pop_request() {
+            if id == self_id {
+                // Execute CS
+                self.execute_cs_task();
+                println!("continue...");
+                self.pop_do_own_and_pass(self_id);
+            } else {
+                println!("sending token...");
+                tx.send(SystemMsg::TokenMsg).unwrap();
+            }
+        }
+    }
+    fn start_with_token_to_self(&self) {
+        self.0
+            .read()
+            .data()
+            .as_ref()
+            .self_tx
+            .send(SystemMsg::TokenMsg)
+            .unwrap();
+    }
+    fn make_self_root(&mut self) {
+        self.0.make_root();
+
+        // Make sure that the new child can send to us
+        {
+            let mut self_wg = self.0.write();
+            let data = self_wg.data_mut().as_mut();
+
+            data.parent_tx
+                .as_ref()
+                .expect("a token must only be passed by a parent (to a node aware of the parent)")
+                .send(SystemMsg::NewParentSender {
+                    parent: data.self_tx.clone(),
+                })
+                .unwrap();
+            data.parent_tx = None;
+        }
+    }
     fn display_name(&self) -> String {
         self.0.read().data().display_name()
     }
@@ -119,7 +225,7 @@ impl SystemNode {
 
                 let mut rng = rand::thread_rng();
                 std::thread::sleep(std::time::Duration::from_millis(
-                    1000 + rng.gen_range(0..10000),
+                    500 + rng.gen_range(0..1000),
                 ));
             }
         }
@@ -159,91 +265,16 @@ impl SystemNode {
 
                 let mut rng = rand::thread_rng();
                 std::thread::sleep(std::time::Duration::from_millis(
-                    1000 + rng.gen_range(0..30000),
+                    500 + rng.gen_range(0..1000),
                 ));
             }
         }
 
         println!("{} finished the CS task", self.display_name());
     }
-
-    pub fn execute(&mut self) {
-        println!("{} finished initialization!", self.display_name());
-
-        if self.is_root() {
-            println!("{} is the starting root!", self.display_name());
-        }
-
-        self.wait_for_start();
-
-        let self_id = self.node_id();
-        loop {
-            self.execute_idle_task();
-
-            {
-                self.push_request(self_id, self.new_self_tx());
-
-                if let Some(parent_tx) = self.parent_tx() {
-                    parent_tx
-                        .send(SystemMsg::RequestMsg {
-                            node_id: self_id,
-                            requesting: self.new_self_tx(),
-                        })
-                        .unwrap();
-
-                    println!("{} sent a request for CS access", self.display_name());
-                }
-            }
-
-            loop {
-                if self.is_root() {
-                    println!("{} is now a root!", self.display_name());
-                    if let Some((_, tx)) = self.pop_request() {
-                        tx.send(SystemMsg::TokenMsg).unwrap();
-                    }
-                };
-
-                match self.recv() {
-                    SystemMsg::TokenMsg => {
-                        if !self.is_root() {
-                            // I'm a child and I got a token from my parent, now I can become
-                            // a new root by making my parent a child
-                            self.0.redirect_root_to();
-                            let mut self_wg = self.0.write();
-                            let data = self_wg.data_mut().as_mut();
-
-                            println!("{} received a token", self.display_name());
-
-                            data.parent_tx.as_ref().expect(
-                                "a token must only be passed by a parent (to a node aware of the parent)",
-                            ).send(SystemMsg::NewParentSender { parent:  data.self_tx.clone()}).unwrap();
-
-                            // Now become a root
-                            data.parent_tx = None;
-                            std::mem::drop(self_wg);
-                        }
-
-                        // Execute CS
-                        self.execute_cs_task();
-                    }
-                    SystemMsg::NewParentSender { parent } => {
-                        self.set_parent(parent);
-                        println!("{} switched its parent", self.display_name());
-                    }
-                    SystemMsg::RequestMsg {
-                        node_id,
-                        requesting,
-                    } => {
-                        println!("{} received a request", self.display_name());
-                        self.push_request(node_id, requesting);
-                    }
-                    SystemMsg::Start => {}
-                }
-            }
-        }
-    }
 }
 
+#[derive(Debug)]
 pub struct SystemNodeRunner {
     node_handle: WeakNodeRef<SystemNodeData>,
 }
@@ -409,7 +440,7 @@ impl SystemNodeRunner {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub enum SystemNodeData {
     Scenario {
         given_name: String,
