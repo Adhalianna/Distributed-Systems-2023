@@ -1,0 +1,13 @@
+{
+    "nodes": {
+        "A": {
+            "instructions": [],
+            "parent": null
+        },
+        "B": {
+            "instructions": [],
+            "parent": "A"
+        }
+    },
+    "execution_duration": 12
+}
