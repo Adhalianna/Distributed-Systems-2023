@@ -1,0 +1,34 @@
+[
+    { 
+        "resources": {
+            "R1": "P4"
+        },
+        "processes": {
+            "P1": [ "R1" ]
+        }
+    },
+    {
+        "resources": {
+            "R2": "P1"
+        },
+        "processes": {
+            "P2": [ "R2" ]
+        }
+    },
+    {
+        "resources": {
+            "R3": "P2"
+        },
+        "processes": {
+            "P3": [ "R2" ]
+        }
+    },
+    {
+        "resources": {
+            "R4": "P3"
+        },
+        "processes": {
+            "P4": [ "R1" ]
+        }
+    }
+]
