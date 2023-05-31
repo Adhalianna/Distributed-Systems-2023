@@ -248,6 +248,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "task4"
+version = "0.1.0"
+dependencies = [
+ "colored",
+ "petgraph",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "unicode-ident"
 version = "1.0.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
