@@ -14,6 +14,13 @@ cargo run --bin task2 inputs/task2/example1.json
 ```
 Described by README in the [task2](task2/README.md) directory.
 
+#### Assignmnet 3
+
+```sh
+cargo run --bin task2 inputs/task3/example2.json
+```
+Described by README in the [task3](task3/README.md) directory.
+
 
 ---
 

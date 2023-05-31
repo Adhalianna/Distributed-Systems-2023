@@ -2,15 +2,25 @@
     "nodes": {
         "A": {
             "instructions": [
-                { "kind": "idle", "duration": 5 },
                 { "kind": "critical_section", "duration": 5 }
             ],
             "parent": null
         },
         "B": {
             "instructions": [
-                { "kind": "idle", "duration": 5 },
                 { "kind": "critical_section", "duration": 5 }
+            ],
+            "parent": "A"
+        },
+        "C": {
+            "instructions": [
+                { "kind": "critical_section", "duration": 5 } 
+            ],
+            "parent": "A"
+        },
+        "D": {
+            "instructions": [
+                { "kind": "critical_section", "duration": 5 } 
             ],
             "parent": "A"
         }
