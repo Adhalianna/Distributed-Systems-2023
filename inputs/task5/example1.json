@@ -1,0 +1,38 @@
+[
+    {
+        "name": "A",
+        "instructions": [
+            {
+                "execute": {
+                    "duration": 2,
+                    "req_from": ["B"]
+                }
+            }
+        ],
+        "connected_to": ["B"]
+    },
+    {
+        "name": "B",
+        "instructions": [
+            {
+                "execute": {
+                    "duration": 2,
+                    "req_from": ["C", "B"]
+                }
+            }
+        ],
+        "connected_to": ["A", "C"]
+    },
+    {
+        "name": "C",
+        "instructions": [
+            {
+                "execute": {
+                    "duration": 2,
+                    "req_from": ["B"]
+                }
+            }
+        ],
+        "connected_to": ["B"]
+    }
+]
