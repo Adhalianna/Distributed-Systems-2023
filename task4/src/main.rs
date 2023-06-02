@@ -1,7 +1,4 @@
-use std::{
-    collections::{hash_map::Entry, HashMap, HashSet},
-    process,
-};
+use std::collections::{hash_map::Entry, HashMap};
 
 #[derive(PartialEq, Eq, Debug, Default, Clone, Copy, Hash)]
 pub enum ResourceState {
@@ -160,15 +157,18 @@ impl Controller {
         let mut reslt = Vec::new();
 
         let mut visited = HashMap::<&ProcessLabel, DfsSearchStatus>::new();
+        visited.extend(
+            self.waits_for
+                .keys()
+                .map(|proc| (proc, DfsSearchStatus::NotVisited)),
+        );
 
-        for p in self.waits_for.keys() {
-            if visited.get(p) == Some(&DfsSearchStatus::NotVisited) {
+        for p in self.processes() {
+            if visited.get(p).copied() == Some(DfsSearchStatus::NotVisited) {
                 let mut tracked = Vec::new();
                 tracked.push(p);
                 visited.insert(p, DfsSearchStatus::Tracked);
-                if let Some(cycle) = self.detect_cycle(&mut tracked, &mut visited) {
-                    reslt.push(cycle);
-                }
+                self.detect_cycle(&mut tracked, &mut visited, &mut reslt);
             }
         }
         reslt
@@ -179,31 +179,34 @@ impl Controller {
         &'a self,
         tracked: &mut Vec<&'a ProcessLabel>,
         visited: &mut HashMap<&'a ProcessLabel, DfsSearchStatus>,
-    ) -> Option<Vec<&'a ProcessLabel>> {
-        let processes = self.waits_for.get(tracked.iter().nth(0).unwrap());
+        result: &mut Vec<Vec<&'a ProcessLabel>>,
+    ) {
+        let processes = self.waits_for.get(tracked.iter().last().unwrap());
         if let Some(processes) = processes {
             for p in processes {
-                if visited.get(p) == Some(&DfsSearchStatus::Tracked) {
-                    return Some(tracked.clone());
-                } else {
+                let process_track_status = visited.get(p).copied();
+                if process_track_status == Some(DfsSearchStatus::Tracked) {
+                    result.push(tracked.clone());
+                    tracked.clear();
+                    tracked.push(p);
+                } else if process_track_status == Some(DfsSearchStatus::NotVisited) {
                     tracked.push(p);
                     visited.insert(p, DfsSearchStatus::Tracked);
-                    return self.detect_cycle(tracked, visited);
+                    return self.detect_cycle(tracked, visited, result);
                 }
             }
         }
-        if let Some(top) = tracked.iter().nth(0) {
+        if let Some(top) = tracked.iter().last() {
             visited.insert(*top, DfsSearchStatus::Done);
             tracked.pop();
         }
-        None
     }
 }
 
 #[derive(PartialEq, Eq, Debug, Hash, Clone, Copy)]
 enum DfsSearchStatus {
+    // coloring
     NotVisited,
-    Visited,
     Tracked,
     Done,
 }
@@ -231,13 +234,19 @@ fn main() {
         .update_wait_for_graph()
         .expect("provided data was insufficient to build a complete wait-for-graph");
 
+    println!("Recorded wait-for-graph:");
+    println!("{:?}", &net.controller.waits_for);
+
+    println!("Recorded status table:");
+    println!("{:?}", &net.controller.status_table);
+
     let cycles = net.controller.detect_all_cycles();
     if cycles.is_empty() {
         println!("No cycles found");
     } else {
         println!("Found cycles causing deadlocks.");
-        for c in cycles {
-            println!("Deadlock between nodes: {c:?}");
+        for c in &cycles {
+            println!("Found deadlock invloving nodes: {c:?}");
         }
     }
 }

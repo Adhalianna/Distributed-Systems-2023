@@ -20,8 +20,8 @@ executing the compiled binary.
 [`inputs/task1/example1.json`](../inputs/task1/example1.json)
 ![](../inputs/task1/example1.png)
 
-[`inputs/task2/example1.json`](../inputs/task1/example2.json)
+[`inputs/task1/example2.json`](../inputs/task1/example2.json)
 ![](../inputs/task1/example2.png)
 
-[`inputs/task3/example1.json`](../inputs/task1/example3.json)
+[`inputs/task1/example3.json`](../inputs/task1/example3.json)
 ![](../inputs/task1/example3.png)

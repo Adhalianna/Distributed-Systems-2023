@@ -17,10 +17,17 @@ Described by README in the [task2](task2/README.md) directory.
 #### Assignmnet 3
 
 ```sh
-cargo run --bin task2 inputs/task3/example2.json
+cargo run --bin task3 inputs/task3/example2.json
 ```
 Described by README in the [task3](task3/README.md) directory.
 
+#### Assignmnet 4
+
+```sh
+cargo run --bin task4 inputs/task4/example2.json
+```
+
+Described by README in the [task4](task4/README.md) directory.
 
 ---
 
