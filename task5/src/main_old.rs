@@ -1,40 +1,26 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, time::Duration};
 
 use crossbeam_channel::{Receiver, Sender};
 
-#[derive(Debug, Clone, serde::Deserialize, PartialEq, Eq, Hash)]
-#[serde(transparent)]
-pub struct NodeName(pub String);
-impl std::fmt::Display for NodeName {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self)
-    }
-}
-
-#[derive(Debug, Clone, serde::Deserialize, PartialEq, Eq, Hash)]
-#[serde(transparent)]
-pub struct ResourceName(pub String);
-
-#[derive(serde::Deserialize, Debug)]
+#[derive(serde::Deserialize, serde::Serialize, Debug)]
 pub struct NodeDescription {
-    pub name: NodeName,
-    pub resources: Vec<ResourceName>,
+    pub name: String,
     pub instructions: Vec<Instruction>,
-    pub connected_to: Vec<NodeName>,
+    pub connected_to: Vec<String>,
 }
 
 #[derive(Debug)]
 pub struct Network {
-    pub nodes: HashMap<NodeName, NodeRunner>,
+    pub nodes: HashMap<String, NodeRunner>,
 }
 
 impl Network {
     pub fn build(from: Vec<NodeDescription>) -> Self {
-        let mut connections = HashMap::<NodeName, Vec<NodeName>>::with_capacity(from.len());
+        let mut connections = HashMap::<String, Vec<String>>::with_capacity(from.len());
         let mut nodes = HashMap::with_capacity(from.len());
         let mut id = 1;
         for desc in from {
-            let runner = NodeRunner::new(desc.name.clone(), desc.instructions, desc.resources, id);
+            let runner = NodeRunner::new(desc.name.clone(), desc.instructions, id);
             connections.insert(desc.name.clone(), desc.connected_to);
             nodes.insert(desc.name.clone(), runner);
             id += 1;
@@ -52,10 +38,42 @@ impl Network {
 }
 
 #[derive(Debug)]
-pub enum Msg {}
+pub enum Msg {
+    RequestResource {
+        requesting: String,
+        requestee_lbl: usize,
+        resource_from: String,
+    },
+    /// Sent in response to the `RequestResource` if a resource is available.
+    ResourceFree { resource_from: String },
+    WaitingFor {
+        waiting_for: String,
+        waiting_for_node_lbl: usize,
+    },
+    /// This message will be used to make a node realise that it is being
+    /// blocked. Sent only as a response to the `RequestResource` message.
+    Busy {
+        busy_node: String,
+        busy_node_lbl: usize,
+    },
+    /// Sent after a node realises that it is blocked.
+    TryDetect { respond_back: Sender<Msg> },
+    /// After receiving the `TryDetect` message a node inspects its own labels
+    /// and the stored label of another blocking process (if any). If those
+    /// indicate a deadlock the `Detected` message is sent in response.
+    Detected,
+    /// If we have no reason to respond with `Detected`, reply with
+    /// `NotDetected` to hint the node that it should resend the request and
+    /// see how it goes then. Not the most efficient solution but the task
+    /// handling and resource management performed by a node are assumed not to
+    /// be a part of the assigmnent.
+    NotDetected,
+}
 
 #[derive(Debug)]
 pub struct Node {
+    /// Used to get pretty status updates.
+    pub name: String,
     /// The public label as described in the Mitchell-Merrit algorithm.
     pub public_lbl: usize,
     /// The private label as described in the Mitchell-Merrit algorithm.    
@@ -63,26 +81,28 @@ pub struct Node {
     //
     // --- implementation specific data: ---
     //
-    /// Used to get pretty status updates.
-    pub name: NodeName,
     /// Used only in the initialization process
     pub initialize_rx: Receiver<InitializeMsg>,
     /// Allows receiving messages from any node in the network.
     pub network_recv: Receiver<Msg>,
     /// Makes it possible to send to a specific neighbour.
-    pub connected_nodes: HashMap<NodeName, Sender<Msg>>,
+    pub connected_nodes: HashMap<String, Sender<Msg>>,
     /// Tasks for the node to execute while it is listening to the messages.
     pub instructions: Vec<Instruction>,
-    /// The resources used currently by the node.
-    pub collected_resources: Vec<ResourceName>,
+    /// Instead of using separate identifiers it is assumed that each node
+    /// stores at most a single resource and as such the resources are
+    /// identified by the names of the nodes owning them -- is one way to
+    /// interpret this. More precisely, the program does not care about the
+    /// resources per se, it only tracks who is asking who.
+    pub collected_resources_from: Vec<String>,
     /// To whom which resource should be passed.
-    pub waiting_for_resource: HashMap<NodeName, Vec<ResourceName>>,
-    /// Allows inspecting the bacground task status.
+    pub waiting_for_resource: HashMap<String, >
     pub executed_task_handle: Option<Receiver<()>>,
+    pub self_tx: Sender<Msg>,
     // -------------------------------------
 }
 
-#[derive(serde::Deserialize, Debug)]
+#[derive(serde::Deserialize, serde::Serialize, Debug)]
 #[serde(rename_all = "snake_case")]
 pub enum Instruction {
     Execute {
@@ -91,7 +111,7 @@ pub enum Instruction {
         /// Issue a request to node specified by the name. The system will
         /// panic if the requested node cannot be reached from the instruction
         /// executing node.
-        resources: Vec<ResourceName>,
+        req_from: Vec<String>,
     },
     /// How long (in seconds) the node will grant access to the resources it
     /// owns.
@@ -103,32 +123,29 @@ pub enum Instruction {
 impl Node {
     /// Returns a list of nodes which need to be requested for resources in
     /// order to proceed with the task.
-    fn proceed_with_next_task(&mut self) -> Option<Vec<ResourceName>> {
+    fn proceed_with_next_task(&mut self) -> Option<Vec<String>> {
         if let Some(next_task) = self.instructions.iter().nth(0) {
             let (tx, rx) = crossbeam_channel::bounded(1);
             self.executed_task_handle = Some(rx);
 
             match next_task {
-                Instruction::Execute {
-                    duration,
-                    resources,
-                } => {
-                    if resources
+                Instruction::Execute { duration, req_from } => {
+                    if req_from
                         .iter()
                         // slighlty inefficient but if we find ourselves needing to iterate over hundreds of resources
                         // then the system might have different characteristics than it was initially assumed and we might
                         // have bigger problems...
-                        .all(|res| self.collected_resources.contains(res))
+                        .all(|res| self.collected_resources_from.contains(res))
                     {
-                        for requested in resources {
+                        for requested in req_from {
                             let index = self
-                                .collected_resources
+                                .collected_resources_from
                                 .iter()
                                 .enumerate()
                                 .find(|(_, req)| **req == *requested)
                                 .map(|(idx, _)| idx)
                                 .unwrap();
-                            self.collected_resources.remove(index);
+                            self.collected_resources_from.remove(index);
                         }
 
                         let dur = *duration;
@@ -138,9 +155,9 @@ impl Node {
                         });
                     } else {
                         return Some(
-                            resources
+                            req_from
                                 .iter()
-                                .filter(|res| !self.collected_resources.contains(res))
+                                .filter(|res| !self.collected_resources_from.contains(res))
                                 .map(|x| x.clone())
                                 .collect::<Vec<_>>(),
                         );
@@ -168,33 +185,36 @@ impl Node {
         if let Some(rx) = &self.executed_task_handle {
             if rx.try_recv().is_ok() {
                 let task = self.instructions.pop().unwrap();
+                self.is_blocked_by = None;
                 self.executed_task_handle = None;
 
                 println!("Node {} finished task: {task:?}", self.name);
 
-                // if let Instruction::Execute {
-                //     duration: _,
-                //     resources,
-                // } = task
-                // {
-                //     for req in resources {
-                //         if let Some(direct_req) = self.connected_nodes.get(&req) {
-                //             direct_req
-                //                 .send(Msg::ResourceFree { resource_from: req })
-                //                 .unwrap();
-                //         } else {
-                //             for (to_pass_to, res_to_pass) in &self.requests_to_pass {
-                //                 self.connected_nodes
-                //                     .get(to_pass_to)
-                //                     .unwrap()
-                //                     .send(Msg::ResourceFree {
-                //                         resource_from: res_to_pass.clone(),
-                //                     })
-                //                     .unwrap()
-                //             }
-                //         }
-                //     }
-                // }
+                if let Instruction::Execute {
+                    duration: _,
+                    req_from,
+                } = task
+                {
+                    for req in req_from {
+                        if let Some(direct_req) = self.connected_nodes.get(&req) {
+                            direct_req
+                                .send(Msg::ResourceFree { resource_from: req })
+                                .unwrap();
+                        } else {
+                            for (to_pass_to, res_to_pass) in &self.requests_to_pass {
+                                self.connected_nodes
+                                    .get(to_pass_to)
+                                    .unwrap()
+                                    .send(Msg::ResourceFree {
+                                        resource_from: res_to_pass.clone(),
+                                    })
+                                    .unwrap()
+                            }
+                        }
+                    }
+                }
+
+                self.collected_resources_from = vec![self.name.clone()];
 
                 true
             } else {
@@ -206,6 +226,7 @@ impl Node {
     }
     fn initialize(&mut self) {
         self.connected_nodes = self.initialize_rx.recv().unwrap().connected_to;
+        self.collected_resources_from.push(self.name.clone());
         println!("Node {} initialized successfully!", self.name);
     }
 
@@ -215,9 +236,21 @@ impl Node {
             if self.instructions.is_empty() {
                 break 'doing_tasks;
             }
-            if let Some(resources_missing) = self.proceed_with_next_task() {
-                for req in resources_missing {
+            if let Some(requests_pending) = self.proceed_with_next_task() {
+                for req in requests_pending {
                     self.public_lbl += 1;
+                    if req != self.name {
+                        for (_, neighbour) in &self.connected_nodes {
+                            neighbour
+                                .send(Msg::RequestResource {
+                                    requesting: self.name.clone(),
+                                    requestee_lbl: self.public_lbl,
+                                    resource_from: req.clone(),
+                                    respond_back: self.self_tx.clone(),
+                                })
+                                .unwrap();
+                        }
+                    }
                 }
             }
             'reading_msg: while !self.is_task_done() {
@@ -355,12 +388,7 @@ pub struct NodeRunner {
 }
 
 impl NodeRunner {
-    pub fn new(
-        name: NodeName,
-        instructions: Vec<Instruction>,
-        resources: Vec<ResourceName>,
-        id: usize,
-    ) -> Self {
+    pub fn new(name: String, instructions: Vec<Instruction>, id: usize) -> Self {
         let (tx, rx) = crossbeam_channel::unbounded();
         let (init_tx, init_rx) = crossbeam_channel::bounded(1);
         let cloned_tx = tx.clone();
@@ -371,11 +399,14 @@ impl NodeRunner {
                 private_lbl: id,
                 network_recv: rx,
                 connected_nodes: HashMap::new(),
+                is_blocked_by: None,
                 instructions,
+                is_busy: false,
+                collected_resources_from: Vec::new(),
                 executed_task_handle: None,
+                self_tx: tx,
                 initialize_rx: init_rx,
-                collected_resources: resources,
-                waiting_for_resource: HashMap::new(),
+                requests_to_pass: Vec::new(),
             };
             node.execute();
         });
@@ -384,7 +415,7 @@ impl NodeRunner {
             connection: (cloned_tx, init_tx),
         }
     }
-    pub fn init(&mut self, connected_nodes: HashMap<NodeName, Sender<Msg>>) {
+    pub fn init(&mut self, connected_nodes: HashMap<String, Sender<Msg>>) {
         self.connection
             .1
             .send(InitializeMsg {
@@ -396,7 +427,7 @@ impl NodeRunner {
 
 #[derive(Debug)]
 pub struct InitializeMsg {
-    pub connected_to: HashMap<NodeName, Sender<Msg>>,
+    pub connected_to: HashMap<String, Sender<Msg>>,
 }
 
 fn main() {
