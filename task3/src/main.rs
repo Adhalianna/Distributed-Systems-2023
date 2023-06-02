@@ -314,7 +314,6 @@ pub struct SystemNodeDescription {
 #[derive(serde::Serialize, serde::Deserialize, Debug)]
 pub struct SystemDescription {
     nodes: HashMap<String, SystemNodeDescription>,
-    execution_duration: usize,
 }
 
 impl SystemDescription {
