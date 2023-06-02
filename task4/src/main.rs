@@ -1,4 +1,7 @@
-use std::collections::{hash_map::Entry, HashMap, HashSet};
+use std::{
+    collections::{hash_map::Entry, HashMap, HashSet},
+    process,
+};
 
 #[derive(PartialEq, Eq, Debug, Default, Clone, Copy, Hash)]
 pub enum ResourceState {
@@ -155,14 +158,16 @@ impl Controller {
     /// Collects all cycles found in the graph
     pub fn detect_all_cycles<'a>(&'a self) -> Vec<Vec<&'a ProcessLabel>> {
         let mut reslt = Vec::new();
-        for p in self.processes() {
-            if !reslt
-                .iter()
-                .flatten()
-                .any(|recorded: &&ProcessLabel| *p == **recorded)
-            {
-                if let Some(found) = self.detect_cycle(p) {
-                    reslt.push(found)
+
+        let mut visited = HashMap::<&ProcessLabel, DfsSearchStatus>::new();
+
+        for p in self.waits_for.keys() {
+            if visited.get(p) == Some(&DfsSearchStatus::NotVisited) {
+                let mut tracked = Vec::new();
+                tracked.push(p);
+                visited.insert(p, DfsSearchStatus::Tracked);
+                if let Some(cycle) = self.detect_cycle(&mut tracked, &mut visited) {
+                    reslt.push(cycle);
                 }
             }
         }
@@ -172,44 +177,35 @@ impl Controller {
     /// Returns optionally a chain of elements making up a cycle
     fn detect_cycle<'a>(
         &'a self,
-        tracked: &mut HashSet<&'a ProcessLabel>,
-        visited: &mut HashSet<&'a ProcessLabel>,
+        tracked: &mut Vec<&'a ProcessLabel>,
+        visited: &mut HashMap<&'a ProcessLabel, DfsSearchStatus>,
     ) -> Option<Vec<&'a ProcessLabel>> {
-        let mut tracked = HashSet::new();
-
-        self.dfs_until_cycle(starting_from, &mut visited, &mut tracked);
-        if tracked.len() > 1 {
-            Some(tracked.iter().map(|x| *x).collect())
-        } else {
-            None
-        }
-    }
-    fn dfs_until_cycle<'a>(
-        &'a self,
-        n: &'a ProcessLabel,
-        visited: &mut HashSet<&'a ProcessLabel>,
-        tracked: &mut HashSet<&'a ProcessLabel>,
-    ) {
-        tracked.insert(n);
-        if !visited.insert(n) {
-            // duplicate inserted, exit, a cycle found
-            return;
-        }
-        if let Some(neighbours) = self.waits_for.get(n) {
-            for neigh in neighbours {
-                if tracked.contains(neigh) {
-                    return;
+        let processes = self.waits_for.get(tracked.iter().nth(0).unwrap());
+        if let Some(processes) = processes {
+            for p in processes {
+                if visited.get(p) == Some(&DfsSearchStatus::Tracked) {
+                    return Some(tracked.clone());
+                } else {
+                    tracked.push(p);
+                    visited.insert(p, DfsSearchStatus::Tracked);
+                    return self.detect_cycle(tracked, visited);
                 }
-                if !visited.contains(neigh) {
-                    self.dfs_until_cycle(neigh, visited, tracked);
-                }
-                // if we exit recursion then it means that what we have visited
-                // so far did not contribute to a cycle:
-
-                // tracked.remove(&neigh);
             }
         }
+        if let Some(top) = tracked.iter().nth(0) {
+            visited.insert(*top, DfsSearchStatus::Done);
+            tracked.pop();
+        }
+        None
     }
+}
+
+#[derive(PartialEq, Eq, Debug, Hash, Clone, Copy)]
+enum DfsSearchStatus {
+    NotVisited,
+    Visited,
+    Tracked,
+    Done,
 }
 
 fn main() {
