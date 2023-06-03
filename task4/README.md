@@ -8,8 +8,8 @@ resources spread between multiple sites.
 
 
 ##### Example 1
-[`inputs/task4/example1.json`](../inputs/task4/example1.json)
-![](../inputs/task4/example1.png)
+[`inputs/task4/example1.json`](../inputs/task4/example1.json)  
+![](../inputs/task4/example1.png)  
 A somewhat random-looking example of a deadlock.
 ```
 Reading from file inputs/task4/example1.json
@@ -26,8 +26,8 @@ example1. Nodes reported to be in the cycle might vary between executions but
 the detection is correct.
 
 ##### Example 2
-[`inputs/task4/example2.json`](../inputs/task4/example2.json)
-![](../inputs/task4/example2.png)
+[`inputs/task4/example2.json`](../inputs/task4/example2.json)  
+![](../inputs/task4/example2.png)  
 A ring-like deadlock composed of 4 nodes and 4 resources.
 ```
 Reading from file inputs/task4/example2.json
@@ -40,8 +40,8 @@ Found deadlock invloving nodes: [P2, P1, P4, P3]
 ```
 
 ##### Example 3
-[`inputs/task4/example3.json`](../inputs/task4/example3.json)
-![](../inputs/task4/example3.png)
+[`inputs/task4/example3.json`](../inputs/task4/example3.json)  
+![](../inputs/task4/example3.png)  
 Not a deadlock.
 Program output:
 ```
@@ -54,8 +54,8 @@ No cycles found
 ```
 
 ##### Example 4
-[`inputs/task4/example3.json`](../inputs/task4/example3.json)
-An example combaining all the previous examples in such a way that three
+[`inputs/task4/example3.json`](../inputs/task4/example3.json)  
+An example combining all the previous examples in such a way that three
 disconnected wait-for-graphs are constructed.
 Program output:
 ```
