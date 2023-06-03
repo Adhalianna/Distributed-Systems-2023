@@ -29,6 +29,15 @@ cargo run --bin task4 inputs/task4/example2.json
 
 Described by README in the [task4](task4/README.md) directory.
 
+#### Assignmnet 5
+
+```sh
+cargo run --bin task5 inputs/task5/example3.json
+```
+
+Described by README in the [task5](task5/README.md) directory.
+
+
 ---
 
 # The execution environment / compilation tools

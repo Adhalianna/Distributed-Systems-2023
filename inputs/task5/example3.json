@@ -1,0 +1,80 @@
+[
+    {
+        "name": "A",
+        "requests": [
+            {
+                "req_from": "A",
+                "global_order": 0
+            },
+            {
+                "req_from": "B",
+                "global_order": 1
+            }
+        ]
+    },
+    {
+        "name": "B",
+        "requests": [
+            {
+                "req_from": "B",
+                "global_order": 0
+            },
+            {
+                "req_from": "C",
+                "global_order": 1
+            }
+        ]
+    },
+    {
+        "name": "C",
+        "requests": [
+            {
+                "req_from": "C",
+                "global_order": 0
+            },
+            {
+                "req_from": "D",
+                "global_order": 1
+            }
+        ]
+    },
+    {
+        "name": "D",
+        "requests": [
+            {
+                "req_from": "D",
+                "global_order": 0
+            },
+            {
+                "req_from": "E",
+                "global_order": 1
+            }
+        ]
+    },
+    {
+        "name": "E",
+        "requests": [
+            {
+                "req_from": "E",
+                "global_order": 0
+            },
+            {
+                "req_from": "F",
+                "global_order": 1
+            }
+        ]
+    },
+    {
+        "name": "F",
+        "requests": [
+            {
+                "req_from": "F",
+                "global_order": 0
+            },
+            {
+                "req_from": "A",
+                "global_order": 1
+            }
+        ]
+    }
+]

@@ -1,0 +1,44 @@
+[
+    {
+        "name": "A",
+        "requests": [
+            {
+                "req_from": "B",
+                "global_order": 1
+            },
+            {
+                "req_from": "C",
+                "global_order": 1
+            },
+            {
+                "req_from": "A",
+                "global_order": 0
+            }
+        ]
+    },
+    {
+        "name": "B",
+        "requests": []
+    },
+    {
+        "name": "C",
+        "requests": []
+    },
+    {
+        "name": "D",
+        "requests": [
+            {
+                "req_from": "B",
+                "global_order": 1
+            },
+            {
+                "req_from": "C",
+                "global_order": 1
+            },
+            {
+                "req_from": "D",
+                "global_order": 0
+            }
+        ]
+    }
+]

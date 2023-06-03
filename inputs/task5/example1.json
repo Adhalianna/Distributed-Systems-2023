@@ -1,38 +1,41 @@
 [
     {
         "name": "A",
-        "instructions": [
+        "requests": [
             {
-                "execute": {
-                    "duration": 2,
-                    "req_from": ["B"]
-                }
+                "req_from": "A",
+                "global_order": 0
+            },
+            {
+                "req_from": "B",
+                "global_order": 1                
             }
-        ],
-        "connected_to": ["B"]
+        ]
     },
     {
         "name": "B",
-        "instructions": [
+        "requests": [
             {
-                "execute": {
-                    "duration": 2,
-                    "req_from": ["C", "B"]
-                }
+                "req_from": "B",
+                "global_order": 0                
+            },
+            {
+                "req_from": "C",
+                "global_order": 1                
             }
-        ],
-        "connected_to": ["A", "C"]
+        ]
     },
     {
         "name": "C",
-        "instructions": [
+        "requests": [
             {
-                "execute": {
-                    "duration": 2,
-                    "req_from": ["B"]
-                }
+                "req_from": "C",
+                "global_order": 0                                
+            },
+            {
+                "req_from": "A",
+                "global_order": 1                
             }
-        ],
-        "connected_to": ["B"]
+        ]
     }
 ]

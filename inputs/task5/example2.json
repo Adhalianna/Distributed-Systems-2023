@@ -1,38 +1,29 @@
 [
     {
         "name": "A",
-        "instructions": [
+        "requests": [
             {
-                "execute": {
-                    "duration": 2,
-                    "req_from": ["B", "A"]
-                }
+                "req_from": "B",
+                "global_order": 0
             }
-        ],
-        "connected_to": ["B"]
+        ]
     },
     {
         "name": "B",
-        "instructions": [
+        "requests": [
             {
-                "execute": {
-                    "duration": 2,
-                    "req_from": ["C", "B"]
-                }
+                "req_from": "C",
+                "global_order": 0                
             }
-        ],
-        "connected_to": ["C"]
+        ]
     },
     {
         "name": "C",
-        "instructions": [
+        "requests": [
             {
-                "execute": {
-                    "duration": 2,
-                    "req_from": ["A", "C"]
-                }
+                "req_from": "C",
+                "global_order": 0
             }
-        ],
-        "connected_to": ["A"]
+        ]
     }
 ]
